@@ -10,3 +10,5 @@ __pycache__/
 .vscode/
 
 *.log
+dataset1.csv
+progress.json
