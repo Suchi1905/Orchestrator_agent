@@ -27,6 +27,8 @@ def normalize_label(label: str) -> str:
         return "out_of_scope"
     if normalized in {"shopping", "queries"}:
         return "service"
+    if normalized == "automation":
+        return "automations"
     if normalized in ALLOWED_INTENTS:
         return normalized
     return "out_of_scope"
@@ -39,6 +41,10 @@ def detect_language_tag(text: str) -> str:
     hindi_script = re.search(r"[\u0900-\u097F]", text)
     if hindi_script:
         return "Hindi"
+
+    malyalam_script = re.search(r"[\u0D00-\u0D7F]", text)
+    if malyalam_script:
+        return "Malayalam"
 
     lower = text.lower()
     hinglish_markers = ["hai", "karo", "karna", "krdo", "mera", "mujhe", "please", "yaar"]
@@ -190,7 +196,7 @@ async def run_benchmark(dataset_path: str, output_dir: str) -> Dict:
                 "actual_label": actual_label,
                 "predicted_label": predicted_label,
                 "correct": predicted_label == actual_label,
-                "latency_seconds": round(latency, 6),
+                "latency_seconds": f"{latency:.6f}",
                 "input_tokens": in_tok,
                 "output_tokens": out_tok,
                 "json_validity": json_valid,
@@ -203,7 +209,7 @@ async def run_benchmark(dataset_path: str, output_dir: str) -> Dict:
 
     total_requests = len(actuals)
     confusion_matrix = build_confusion_matrix(list(zip(actuals, predictions)))
-    latency_metrics = compute_latency_percentiles(latencies)
+    latency_metrics = {k: f"{v:.6f}" for k, v in compute_latency_percentiles(latencies).items()}
     overall_accuracy = compute_accuracy(predictions, actuals)
     cls_metrics = compute_precision_recall_f1(confusion_matrix)
     guardrail_fpr = compute_false_positive_rate(actuals, predictions, out_of_scope_label="out_of_scope")
