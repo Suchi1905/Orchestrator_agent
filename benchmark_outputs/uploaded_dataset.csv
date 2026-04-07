@@ -1,0 +1,479 @@
+input_text,actual_label
+Hi,greeting
+Hello,greeting
+Hey,greeting
+Hi there,greeting
+Hello assistant,greeting
+Hey system,greeting
+Hi device,greeting
+Hello buddy,greeting
+Hey there,greeting
+"Hi, are you there",greeting
+"Hello, can you hear me",greeting
+"Hey, are you working",greeting
+"Hi, are you active",greeting
+"Hello, ready to go",greeting
+"Hey assistant, respond",greeting
+"Hi, I need help",greeting
+"Hello, start listening",greeting
+"Hey, wake up",greeting
+"Hi system, ready?",greeting
+"Hello, begin",greeting
+Hi hello,greeting
+Hello again,greeting
+Hey again,greeting
+"Hi, let's start",greeting
+"Hello, continue",greeting
+"Hey, resume",greeting
+"Hi assistant, ready now",greeting
+"Hello system, activate",greeting
+"Hey device, respond",greeting
+"Hi, start now",greeting
+"Hello, are you online",greeting
+"Hey, are you listening",greeting
+"Hi, wake up system",greeting
+"Hello, initialize",greeting
+"Hey, be ready",greeting
+"Hi assistant, start",greeting
+"Hello, begin now",greeting
+"Hey, respond now",greeting
+"Hi, get ready",greeting
+"Hello, activate now",greeting
+Hi bro,greeting
+Hello dude,greeting
+Hey buddy,greeting
+Hi friend,greeting
+Hello man,greeting
+"Hey assistant, hi",greeting
+"Hi system, hello",greeting
+"Hello device, hi",greeting
+"Hey, hi assistant",greeting
+"Hi, hello system",greeting
+"Hi hello, turn on AC",greeting
+"Hello, switch on fan",greeting
+"Hey, turn off light",greeting
+"Hi, start AC",greeting
+"Hello, activate fan",greeting
+"Hey, power on light",greeting
+"Hi, turn off TV",greeting
+"Hello, start heater",greeting
+"Hey, stop purifier",greeting
+"Hi, switch on bulb",greeting
+"Hi, can you help",greeting
+"Hello, need assistance",greeting
+"Hey, support me",greeting
+"Hi, listen to me",greeting
+"Hello, I have a command",greeting
+"Hey, get ready",greeting
+"Hi, respond please",greeting
+"Hello, start processing",greeting
+"Hey, initialize system",greeting
+"Hi, begin interaction",greeting
+"Hi, I'm here",greeting
+"Hello, I just came",greeting
+"Hey, I'm back",greeting
+Hi again,greeting
+Hello again assistant,greeting
+"Hey system, I'm here",greeting
+"Hi device, ready?",greeting
+"Hello, let's go",greeting
+"Hey, let's begin",greeting
+"Hi, continue now",greeting
+"Hi assistant, check",greeting
+"Hello system, check",greeting
+"Hey device, check",greeting
+"Hi, status please",greeting
+"Hello, respond quickly",greeting
+"Hey, activate quickly",greeting
+"Hi, system ready?",greeting
+"Hello, ready now?",greeting
+"Hey, working fine?",greeting
+"Hi, all good?",greeting
+Turn on AC,device_control
+Turn off AC,device_control
+Switch on fan,device_control
+Switch off fan,device_control
+Turn on light,device_control
+Turn off light,device_control
+Switch on TV,device_control
+Switch off TV,device_control
+Turn on heater,device_control
+Turn off heater,device_control
+Start purifier,device_control
+Stop purifier,device_control
+Activate AC,device_control
+Deactivate AC,device_control
+Power on fan,device_control
+Power off fan,device_control
+Turn on bulb,device_control
+Turn off bulb,device_control
+Turn on lights,device_control
+Turn off lights,device_control
+Increase AC temperature,device_control
+Decrease AC temperature,device_control
+Set AC to 24 degrees,device_control
+Set temperature to 22,device_control
+Increase temp by 2,device_control
+Decrease temp by 3,device_control
+Set AC cool mode,device_control
+Set AC fan mode,device_control
+Turn on cooling,device_control
+Turn off cooling,device_control
+Increase fan speed,device_control
+Decrease fan speed,device_control
+Set fan high speed,device_control
+Set fan low speed,device_control
+Set fan medium speed,device_control
+Fan max speed,device_control
+Slow down fan,device_control
+Speed up fan,device_control
+Reduce fan speed,device_control
+Boost fan speed,device_control
+Turn on all lights,device_control
+Turn off all lights,device_control
+Turn on bedroom light,device_control
+Turn off hall light,device_control
+Turn on living room AC,device_control
+Turn off kitchen light,device_control
+Turn on bathroom light,device_control
+Turn off bedroom fan,device_control
+Turn on corridor light,device_control
+Turn off all devices,device_control
+Turn on AC and fan,device_control
+Turn off AC and light,device_control
+Turn on TV and light,device_control
+Turn off fan and heater,device_control
+Turn everything on,device_control
+Turn everything off,device_control
+Start all appliances,device_control
+Stop all appliances,device_control
+Turn all devices on,device_control
+Shut down everything,device_control
+Check AC status,device_control
+Check fan status,device_control
+Check light status,device_control
+Is AC on,device_control
+Is fan running,device_control
+Is light on,device_control
+Check room temperature,device_control
+Check device status,device_control
+Get AC temp,device_control
+Get fan speed,device_control
+Dim lights,device_control
+Increase brightness,device_control
+Decrease brightness,device_control
+Set brightness to 50,device_control
+Max brightness,device_control
+Lower brightness,device_control
+Raise brightness,device_control
+Adjust lighting,device_control
+Make lights bright,device_control
+Make lights dim,device_control
+Turn on AC in bedroom,device_control
+Turn off fan in hall,device_control
+Turn on lights in kitchen,device_control
+Turn off TV in living room,device_control
+Start heater in room,device_control
+Stop purifier in bedroom,device_control
+Turn on bulb in hall,device_control
+Turn off AC in office,device_control
+Switch on fan in bedroom,device_control
+Switch off light in hall,device_control
+Turn on AC quickly,device_control
+Turn off everything now,device_control
+What is the weather today,out_of_scope
+Tell me today's news,out_of_scope
+What time is it,out_of_scope
+Who is the prime minister,out_of_scope
+Tell me a joke,out_of_scope
+Book a cab,out_of_scope
+What is capital of India,out_of_scope
+Calculate 45 plus 32,out_of_scope
+Tomorrow weather,out_of_scope
+Where is my phone,out_of_scope
+Explain quantum physics,out_of_scope
+How are you,out_of_scope
+Explain AC working,out_of_scope
+Translate hello to Spanish,out_of_scope
+Write an email,out_of_scope
+What is AI,out_of_scope
+Generate report,out_of_scope
+Write poem,out_of_scope
+Explain ML,out_of_scope
+Tell me story,out_of_scope
+Play music,out_of_scope
+Open YouTube,out_of_scope
+Open Google,out_of_scope
+Open maps,out_of_scope
+Show location,out_of_scope
+Book flight,out_of_scope
+Book train,out_of_scope
+Order food,out_of_scope
+Order groceries,out_of_scope
+Open Instagram,out_of_scope
+Open Facebook,out_of_scope
+Open Twitter,out_of_scope
+Send message,out_of_scope
+Call friend,out_of_scope
+Check email,out_of_scope
+Read notifications,out_of_scope
+Open browser,out_of_scope
+Search Google,out_of_scope
+Show trends,out_of_scope
+Fitness tips,out_of_scope
+Lose weight,out_of_scope
+Diet plan,out_of_scope
+Teach coding,out_of_scope
+Learn Python,out_of_scope
+Explain data science,out_of_scope
+Interview tips,out_of_scope
+Get job,out_of_scope
+Best books,out_of_scope
+Exam tips,out_of_scope
+Cricket score,out_of_scope
+IPL score,out_of_scope
+Movie suggestion,out_of_scope
+Web series,out_of_scope
+Play video,out_of_scope
+Netflix open,out_of_scope
+Trending movies,out_of_scope
+Travel plan,out_of_scope
+Goa trip,out_of_scope
+Tourist places,out_of_scope
+Book hotel,out_of_scope
+Passport process,out_of_scope
+Visa process,out_of_scope
+Distance between cities,out_of_scope
+Route directions,out_of_scope
+Nearby restaurants,out_of_scope
+Restaurant reviews,out_of_scope
+Stock market,out_of_scope
+Bitcoin price,out_of_scope
+Latest news,out_of_scope
+Weather tomorrow,out_of_scope
+Current temperature,out_of_scope
+World news,out_of_scope
+Sports update,out_of_scope
+Headlines,out_of_scope
+Top news,out_of_scope
+Live score,out_of_scope
+Game results,out_of_scope
+Football score,out_of_scope
+Basketball score,out_of_scope
+Match result,out_of_scope
+Election news,out_of_scope
+Political news,out_of_scope
+Business news,out_of_scope
+Tech news,out_of_scope
+Science news,out_of_scope
+Education news,out_of_scope
+Health tips,out_of_scope
+Medical advice,out_of_scope
+Doctor suggestion,out_of_scope
+Hospital nearby,out_of_scope
+Medicine info,out_of_scope
+Symptoms check,out_of_scope
+Global news,out_of_scope
+Breaking news,out_of_scope
+Daily updates,out_of_scope
+Entertainment news,out_of_scope
+AC not working issue 1,service
+AC not working issue 2,service
+AC not working issue 3,service
+AC not working issue 4,service
+AC not working issue 5,service
+AC not working issue 6,service
+AC not working issue 7,service
+AC not working issue 8,service
+AC not working issue 9,service
+AC not working issue 10,service
+AC not working issue 11,service
+AC not working issue 12,service
+AC not working issue 13,service
+AC not working issue 14,service
+AC not working issue 15,service
+AC not working issue 16,service
+AC not working issue 17,service
+AC not working issue 18,service
+AC not working issue 19,service
+AC not working issue 20,service
+AC not working issue 21,service
+AC not working issue 22,service
+AC not working issue 23,service
+AC not working issue 24,service
+AC not working issue 25,service
+AC not working issue 26,service
+AC not working issue 27,service
+AC not working issue 28,service
+AC not working issue 29,service
+AC not working issue 30,service
+AC not working issue 31,service
+AC not working issue 32,service
+AC not working issue 33,service
+AC not working issue 34,service
+AC not working issue 35,service
+AC not working issue 36,service
+AC not working issue 37,service
+AC not working issue 38,service
+AC not working issue 39,service
+AC not working issue 40,service
+AC not working issue 41,service
+AC not working issue 42,service
+AC not working issue 43,service
+AC not working issue 44,service
+AC not working issue 45,service
+AC not working issue 46,service
+AC not working issue 47,service
+AC not working issue 48,service
+AC not working issue 49,service
+AC not working issue 50,service
+AC not working issue 51,service
+AC not working issue 52,service
+AC not working issue 53,service
+AC not working issue 54,service
+AC not working issue 55,service
+AC not working issue 56,service
+AC not working issue 57,service
+AC not working issue 58,service
+AC not working issue 59,service
+AC not working issue 60,service
+AC not working issue 61,service
+AC not working issue 62,service
+AC not working issue 63,service
+AC not working issue 64,service
+AC not working issue 65,service
+AC not working issue 66,service
+AC not working issue 67,service
+AC not working issue 68,service
+AC not working issue 69,service
+AC not working issue 70,service
+AC not working issue 71,service
+AC not working issue 72,service
+AC not working issue 73,service
+AC not working issue 74,service
+AC not working issue 75,service
+AC not working issue 76,service
+AC not working issue 77,service
+AC not working issue 78,service
+AC not working issue 79,service
+AC not working issue 80,service
+AC not working issue 81,service
+AC not working issue 82,service
+AC not working issue 83,service
+AC not working issue 84,service
+AC not working issue 85,service
+AC not working issue 86,service
+AC not working issue 87,service
+AC not working issue 88,service
+AC not working issue 89,service
+AC not working issue 90,service
+AC not working issue 91,service
+AC not working issue 92,service
+AC not working issue 93,service
+AC not working issue 94,service
+AC not working issue 95,service
+AC not working issue 96,service
+AC not working issue 97,service
+AC not working issue 98,service
+AC not working issue 99,service
+AC not working issue 100,service
+Turn off lights at 10 PM schedule 1,automation
+Turn off lights at 10 PM schedule 2,automation
+Turn off lights at 10 PM schedule 3,automation
+Turn off lights at 10 PM schedule 4,automation
+Turn off lights at 10 PM schedule 5,automation
+Turn off lights at 10 PM schedule 6,automation
+Turn off lights at 10 PM schedule 7,automation
+Turn off lights at 10 PM schedule 8,automation
+Turn off lights at 10 PM schedule 9,automation
+Turn off lights at 10 PM schedule 10,automation
+Turn off lights at 10 PM schedule 11,automation
+Turn off lights at 10 PM schedule 12,automation
+Turn off lights at 10 PM schedule 13,automation
+Turn off lights at 10 PM schedule 14,automation
+Turn off lights at 10 PM schedule 15,automation
+Turn off lights at 10 PM schedule 16,automation
+Turn off lights at 10 PM schedule 17,automation
+Turn off lights at 10 PM schedule 18,automation
+Turn off lights at 10 PM schedule 19,automation
+Turn off lights at 10 PM schedule 20,automation
+Turn off lights at 10 PM schedule 21,automation
+Turn off lights at 10 PM schedule 22,automation
+Turn off lights at 10 PM schedule 23,automation
+Turn off lights at 10 PM schedule 24,automation
+Turn off lights at 10 PM schedule 25,automation
+Turn off lights at 10 PM schedule 26,automation
+Turn off lights at 10 PM schedule 27,automation
+Turn off lights at 10 PM schedule 28,automation
+Turn off lights at 10 PM schedule 29,automation
+Turn off lights at 10 PM schedule 30,automation
+Turn off lights at 10 PM schedule 31,automation
+Turn off lights at 10 PM schedule 32,automation
+Turn off lights at 10 PM schedule 33,automation
+Turn off lights at 10 PM schedule 34,automation
+Turn off lights at 10 PM schedule 35,automation
+Turn off lights at 10 PM schedule 36,automation
+Turn off lights at 10 PM schedule 37,automation
+Turn off lights at 10 PM schedule 38,automation
+Turn off lights at 10 PM schedule 39,automation
+Turn off lights at 10 PM schedule 40,automation
+Turn off lights at 10 PM schedule 41,automation
+Turn off lights at 10 PM schedule 42,automation
+Turn off lights at 10 PM schedule 43,automation
+Turn off lights at 10 PM schedule 44,automation
+Turn off lights at 10 PM schedule 45,automation
+Turn off lights at 10 PM schedule 46,automation
+Turn off lights at 10 PM schedule 47,automation
+Turn off lights at 10 PM schedule 48,automation
+Turn off lights at 10 PM schedule 49,automation
+Turn off lights at 10 PM schedule 50,automation
+Turn off lights at 10 PM schedule 51,automation
+Turn off lights at 10 PM schedule 52,automation
+Turn off lights at 10 PM schedule 53,automation
+Turn off lights at 10 PM schedule 54,automation
+Turn off lights at 10 PM schedule 55,automation
+Turn off lights at 10 PM schedule 56,automation
+Turn off lights at 10 PM schedule 57,automation
+Turn off lights at 10 PM schedule 58,automation
+Turn off lights at 10 PM schedule 59,automation
+Turn off lights at 10 PM schedule 60,automation
+Turn off lights at 10 PM schedule 61,automation
+Turn off lights at 10 PM schedule 62,automation
+Turn off lights at 10 PM schedule 63,automation
+Turn off lights at 10 PM schedule 64,automation
+Turn off lights at 10 PM schedule 65,automation
+Turn off lights at 10 PM schedule 66,automation
+Turn off lights at 10 PM schedule 67,automation
+Turn off lights at 10 PM schedule 68,automation
+Turn off lights at 10 PM schedule 69,automation
+Turn off lights at 10 PM schedule 70,automation
+Turn off lights at 10 PM schedule 71,automation
+Turn off lights at 10 PM schedule 72,automation
+Turn off lights at 10 PM schedule 73,automation
+Turn off lights at 10 PM schedule 74,automation
+Turn off lights at 10 PM schedule 75,automation
+Turn off lights at 10 PM schedule 76,automation
+Turn off lights at 10 PM schedule 77,automation
+Turn off lights at 10 PM schedule 78,automation
+Turn off lights at 10 PM schedule 79,automation
+Turn off lights at 10 PM schedule 80,automation
+Turn off lights at 10 PM schedule 81,automation
+Turn off lights at 10 PM schedule 82,automation
+Turn off lights at 10 PM schedule 83,automation
+Turn off lights at 10 PM schedule 84,automation
+Turn off lights at 10 PM schedule 85,automation
+Turn off lights at 10 PM schedule 86,automation
+Turn off lights at 10 PM schedule 87,automation
+Turn off lights at 10 PM schedule 88,automation
+Turn off lights at 10 PM schedule 89,automation
+Turn off lights at 10 PM schedule 90,automation
+Turn off lights at 10 PM schedule 91,automation
+Turn off lights at 10 PM schedule 92,automation
+Turn off lights at 10 PM schedule 93,automation
+Turn off lights at 10 PM schedule 94,automation
+Turn off lights at 10 PM schedule 95,automation
+Turn off lights at 10 PM schedule 96,automation
+Turn off lights at 10 PM schedule 97,automation
+Turn off lights at 10 PM schedule 98,automation
+Turn off lights at 10 PM schedule 99,automation
+Turn off lights at 10 PM schedule 100,automation
