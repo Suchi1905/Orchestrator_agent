@@ -1,2 +1,8 @@
 google-adk
 python-dotenv
+requests
+openpyxl
+streamlit
+pandas
+reportlab
+python-docx
