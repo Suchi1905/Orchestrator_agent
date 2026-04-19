@@ -22,15 +22,40 @@ from metrics_engine import (
 
 
 def normalize_label(label: str) -> str:
+    """
+    Map any raw label string to one of the canonical ALLOWED_INTENTS.
+    Handles legacy/alternate spellings so older datasets still work.
+    """
     normalized = (label or "").strip().lower()
-    if normalized == "guardrail":
-        return "out_of_scope"
-    if normalized in {"shopping", "queries"}:
-        return "service"
-    if normalized == "automation":
-        return "automations"
-    if normalized in ALLOWED_INTENTS:
-        return normalized
+
+    _alias_map = {
+        # greetings
+        "greeting":        "greetings",
+        "greetings":       "greetings",
+        # device control
+        "device_control":  "device_control",
+        # service / customer support
+        "service_request": "service_request",
+        "service":         "service_request",
+        "shopping":        "service_request",
+        "queries":         "service_request",
+        # automations
+        "automations":     "automations",
+        "automation":      "automations",
+        # out of scope / guardrail
+        "out_of_scope":    "out_of_scope",
+        "guardrail":       "out_of_scope",
+        "unsafe":          "out_of_scope",
+    }
+
+    if normalized in _alias_map:
+        return _alias_map[normalized]
+
+    # Partial / prefix match fallback
+    for key, canonical in _alias_map.items():
+        if normalized.startswith(key):
+            return canonical
+
     return "out_of_scope"
 
 
@@ -151,12 +176,23 @@ async def run_benchmark(dataset_path: str, output_dir: str) -> Dict:
 
     reset_orchestrator_tracking()
 
-    for idx, row in enumerate(rows, start=1):
+    sem = asyncio.Semaphore(20)
+
+    async def _process_row(idx, row):
         query = str(row.get("input_text", "")).strip()
         actual_label = normalize_label(str(row.get("actual_label", "")))
         language = (row.get("language") or "").strip() or detect_language_tag(query)
 
-        result = await orchestrate_request_with_meta(query, max_retries=1)
+        async with sem:
+            result = await orchestrate_request_with_meta(query, max_retries=2)
+            
+        return idx, query, actual_label, language, result
+
+    tasks = [_process_row(idx, row) for idx, row in enumerate(rows, start=1)]
+    results = await asyncio.gather(*tasks)
+
+    for idx, query, actual_label, language, result in results:
+
         output = result["output"]
 
         predicted_label = normalize_label(output.get("intent", "out_of_scope"))

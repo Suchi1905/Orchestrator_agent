@@ -6,3 +6,6 @@ streamlit
 pandas
 reportlab
 python-docx
+scikit-learn
+sentence-transformers
+joblib

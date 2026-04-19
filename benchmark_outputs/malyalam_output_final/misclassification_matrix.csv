@@ -1,6 +1,0 @@
-actual/predicted,greeting,device_control,service,automations,out_of_scope,total
-greeting,96,0,0,0,0,96
-device_control,0,94,3,0,0,97
-service,0,43,51,0,4,98
-automations,0,19,0,75,0,94
-out_of_scope,0,0,14,0,84,98

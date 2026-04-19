@@ -4,11 +4,30 @@ __pycache__/
 *.pyo
 *.pyd
 
+# API keys — NEVER commit this
 .env
 
+# IDE
 .idea/
 .vscode/
 
+# Generated output folders (created at runtime)
+benchmark_outputs/
+api_outputs/
+eng_outputs/
+final_outputs/
+new_outputs/
+
+# Generated CSV outputs (created at runtime)
+confusion_matrix.csv
+evaluation_results.csv
+status.txt
+
+# Logs
 *.log
+
+# Dataset files (add your own, don't commit large datasets to git)
 dataset1.csv
-progress.json
+
+# HuggingFace model cache (downloaded automatically)
+.cache/

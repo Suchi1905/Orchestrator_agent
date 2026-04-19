@@ -29,12 +29,25 @@ EXPECTED_COLUMNS = ["input_text", "actual_label"]
 
 def normalize_label(label: str) -> str:
     normalized = (label or "").strip().lower()
-    if normalized in {"shopping", "queries"}:
-        return "service"
-    if normalized in {"guardrail", "unsafe"}:
-        return "out_of_scope"
-    if normalized in ALLOWED_INTENTS:
-        return normalized
+    _alias_map = {
+        "greeting":        "greetings",
+        "greetings":       "greetings",
+        "device_control":  "device_control",
+        "service_request": "service_request",
+        "service":         "service_request",
+        "shopping":        "service_request",
+        "queries":         "service_request",
+        "automations":     "automations",
+        "automation":      "automations",
+        "out_of_scope":    "out_of_scope",
+        "guardrail":       "out_of_scope",
+        "unsafe":          "out_of_scope",
+    }
+    if normalized in _alias_map:
+        return _alias_map[normalized]
+    for key, canonical in _alias_map.items():
+        if normalized.startswith(key):
+            return canonical
     return "out_of_scope"
 
 
