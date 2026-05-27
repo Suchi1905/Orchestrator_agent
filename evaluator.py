@@ -24,39 +24,46 @@ from metrics_engine import (
 def normalize_label(label: str) -> str:
     """
     Map any raw label string to one of the canonical ALLOWED_INTENTS.
-    Handles legacy/alternate spellings so older datasets still work.
-    """
-    normalized = (label or "").strip().lower()
 
+    For MIXED-INTENT mode: returns a single canonical label string.
+    For MULTI-INTENT mode: returns a comma-separated sorted string of labels
+      (e.g. "device_control,service_request").
+
+    Handles legacy/alternate spellings and comma-separated multi-label input.
+    """
     _alias_map = {
-        # greetings
         "greeting":        "greetings",
         "greetings":       "greetings",
-        # device control
         "device_control":  "device_control",
-        # service / customer support
         "service_request": "service_request",
         "service":         "service_request",
         "shopping":        "service_request",
         "queries":         "service_request",
-        # automations
         "automations":     "automations",
         "automation":      "automations",
-        # out of scope / guardrail
         "out_of_scope":    "out_of_scope",
         "guardrail":       "out_of_scope",
         "unsafe":          "out_of_scope",
     }
 
-    if normalized in _alias_map:
-        return _alias_map[normalized]
+    intents = set()
+    for p in str(label).split(","):
+        normalized = p.strip().lower()
+        if not normalized:
+            continue
+        mapped = "out_of_scope"
+        if normalized in _alias_map:
+            mapped = _alias_map[normalized]
+        else:
+            for key, canonical in _alias_map.items():
+                if normalized.startswith(key):
+                    mapped = canonical
+                    break
+        intents.add(mapped)
 
-    # Partial / prefix match fallback
-    for key, canonical in _alias_map.items():
-        if normalized.startswith(key):
-            return canonical
-
-    return "out_of_scope"
+    if not intents:
+        return "out_of_scope"
+    return ",".join(sorted(intents))
 
 
 def detect_language_tag(text: str) -> str:
@@ -95,24 +102,34 @@ def load_dataset(path: str) -> List[Dict[str, str]]:
     return rows
 
 
-def build_confusion_matrix(labels: List[str]) -> Dict[str, Dict[str, int]]:
+def build_confusion_matrix(labels: List[tuple]) -> Dict[str, Dict[str, int]]:
     matrix_labels = list(ALLOWED_INTENTS)
-    matrix = {actual: {pred: 0 for pred in matrix_labels} for actual in matrix_labels}
+    metrics = {label: {"tp": 0, "fp": 0, "fn": 0, "tn": 0} for label in matrix_labels}
+    
     for actual, pred in labels:
-        a = actual if actual in matrix else "out_of_scope"
-        p = pred if pred in matrix[a] else "out_of_scope"
-        matrix[a][p] += 1
-    return matrix
+        actual_set = set(actual.split(",")) if actual else set()
+        pred_set = set(pred.split(",")) if pred else set()
+        
+        for label in matrix_labels:
+            if label in actual_set and label in pred_set:
+                metrics[label]["tp"] += 1
+            elif label not in actual_set and label in pred_set:
+                metrics[label]["fp"] += 1
+            elif label in actual_set and label not in pred_set:
+                metrics[label]["fn"] += 1
+            else:
+                metrics[label]["tn"] += 1
+    return metrics
 
 
 def save_confusion_matrix_csv(path: str, matrix: Dict[str, Dict[str, int]]) -> None:
     labels = list(ALLOWED_INTENTS)
     with open(path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
-        writer.writerow(["actual/predicted"] + labels + ["total"])
-        for actual in labels:
-            total = sum(matrix[actual][pred] for pred in labels)
-            writer.writerow([actual] + [matrix[actual][pred] for pred in labels] + [total])
+        writer.writerow(["intent", "true_positive", "false_positive", "false_negative", "true_negative"])
+        for label in labels:
+            m = matrix[label]
+            writer.writerow([label, m["tp"], m["fp"], m["fn"], m["tn"]])
 
 
 def save_detailed_csv(path: str, rows: List[Dict]) -> None:
@@ -153,7 +170,23 @@ def save_summary_csv(path: str, report: Dict) -> None:
             writer.writerow(row)
 
 
-async def run_benchmark(dataset_path: str, output_dir: str) -> Dict:
+async def run_benchmark(dataset_path: str, output_dir: str, mode: str = "mixed") -> Dict:
+    """
+    Run the full benchmark pipeline.
+
+    Parameters
+    ----------
+    dataset_path : str
+        Path to the CSV file (must have 'input_text' and 'actual_label' columns).
+    output_dir : str
+        Directory where output files are written.
+    mode : str
+        'mixed'  — evaluate using the MIXED-INTENT output (single canonical label).
+                   Use for: final_cleaned_dataset.csv, new_dataset.csv.
+        'multi'  — evaluate using the MULTI-INTENT output (one or two labels,
+                   with priority rules applied).
+                   Use for: havells_multi_intent_dataset.csv.
+    """
     rows = load_dataset(dataset_path)
     os.makedirs(output_dir, exist_ok=True)
 
@@ -179,50 +212,64 @@ async def run_benchmark(dataset_path: str, output_dir: str) -> Dict:
     sem = asyncio.Semaphore(20)
 
     async def _process_row(idx, row):
-        query = str(row.get("input_text", "")).strip()
+        query        = str(row.get("input_text", "")).strip()
         actual_label = normalize_label(str(row.get("actual_label", "")))
-        language = (row.get("language") or "").strip() or detect_language_tag(query)
+        language     = (row.get("language") or "").strip() or detect_language_tag(query)
 
         async with sem:
             result = await orchestrate_request_with_meta(query, max_retries=2)
-            
-        return idx, query, actual_label, language, result
+
+        # --- Pick the output dictionary based on evaluation mode ---
+        if mode == "multi":
+            # Use the MULTI-INTENT classifier output
+            output_dict = result.get("multi_intent_output") or result.get("output", {})
+        else:
+            # Use the MIXED-INTENT (default production) output
+            output_dict = result.get("output", {})
+
+        return idx, query, actual_label, language, result, output_dict
 
     tasks = [_process_row(idx, row) for idx, row in enumerate(rows, start=1)]
     results = await asyncio.gather(*tasks)
 
-    for idx, query, actual_label, language, result in results:
-
-        output = result["output"]
+    for idx, query, actual_label, language, result, output in results:
 
         predicted_label = normalize_label(output.get("intent", "out_of_scope"))
         predictions.append(predicted_label)
         actuals.append(actual_label)
 
         latency = float(result.get("latency_seconds", 0.0))
-        in_tok = int(result.get("input_tokens", 0))
+        in_tok  = int(result.get("input_tokens", 0))
         out_tok = int(result.get("output_tokens", 0))
         latencies.append(latency)
         input_tokens_all.append(in_tok)
         output_tokens_all.append(out_tok)
 
         json_valid = bool(result.get("json_validity", False))
-        schema_ok = bool(result.get("schema_compliance", False))
+        schema_ok  = bool(result.get("schema_compliance", False))
         if json_valid:
             json_valid_true += 1
         if schema_ok:
             schema_compliant_true += 1
 
         failure_count += int(result.get("failure_count", 0))
-        retry_count += int(result.get("retry_count", 0))
+        retry_count   += int(result.get("retry_count", 0))
 
         if language not in language_tracker:
             language_tracker[language] = {"total": 0, "correct": 0}
         language_tracker[language]["total"] += 1
-        if predicted_label == actual_label:
+
+        # Multi-intent accuracy uses SET equality (both labels must match)
+        is_correct = (
+            frozenset(predicted_label.split(",")) == frozenset(actual_label.split(","))
+        )
+        if is_correct:
             language_tracker[language]["correct"] += 1
 
-        request_cost = ((in_tok / 1000.0) * input_cost_per_1k_tokens) + ((out_tok / 1000.0) * output_cost_per_1k_tokens)
+        request_cost = (
+            (in_tok / 1000.0) * input_cost_per_1k_tokens
+            + (out_tok / 1000.0) * output_cost_per_1k_tokens
+        )
 
         detailed_rows.append(
             {
@@ -231,7 +278,8 @@ async def run_benchmark(dataset_path: str, output_dir: str) -> Dict:
                 "language": language,
                 "actual_label": actual_label,
                 "predicted_label": predicted_label,
-                "correct": predicted_label == actual_label,
+                "correct": is_correct,
+                "mode": mode,
                 "latency_seconds": f"{latency:.6f}",
                 "input_tokens": in_tok,
                 "output_tokens": out_tok,
@@ -244,11 +292,16 @@ async def run_benchmark(dataset_path: str, output_dir: str) -> Dict:
         )
 
     total_requests = len(actuals)
-    confusion_matrix = build_confusion_matrix(list(zip(actuals, predictions)))
-    latency_metrics = {k: f"{v:.6f}" for k, v in compute_latency_percentiles(latencies).items()}
-    overall_accuracy = compute_accuracy(predictions, actuals)
-    cls_metrics = compute_precision_recall_f1(confusion_matrix)
-    guardrail_fpr = compute_false_positive_rate(actuals, predictions, out_of_scope_label="out_of_scope")
+    # For multi-intent: exact match requires identical label sets
+    exact_matches  = sum(
+        1 for a, p in zip(actuals, predictions)
+        if frozenset(a.split(",")) == frozenset(p.split(","))
+    )
+    overall_accuracy  = round(exact_matches / total_requests, 6) if total_requests else 0.0
+    confusion_matrix  = build_confusion_matrix(list(zip(actuals, predictions)))
+    latency_metrics   = {k: f"{v:.6f}" for k, v in compute_latency_percentiles(latencies).items()}
+    cls_metrics       = compute_precision_recall_f1(confusion_matrix)
+    guardrail_fpr     = compute_false_positive_rate(actuals, predictions, out_of_scope_label="out_of_scope")
 
     total_input_tokens = sum(input_tokens_all)
     total_output_tokens = sum(output_tokens_all)
@@ -274,6 +327,7 @@ async def run_benchmark(dataset_path: str, output_dir: str) -> Dict:
             "model_provider": MODEL_PROVIDER,
             "model_id": SARVAM_MODEL_ID,
             "dataset": dataset_path,
+            "evaluation_mode": mode,          # 'mixed' or 'multi'
             "total_requests": total_requests,
             "allowed_intents": list(ALLOWED_INTENTS),
             "pricing": {

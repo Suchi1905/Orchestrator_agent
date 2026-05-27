@@ -41,9 +41,9 @@ def compute_precision_recall_f1(confusion_matrix: Dict[str, Dict[str, int]]) -> 
     macro_f1 = 0.0
 
     for label in labels:
-        tp = confusion_matrix.get(label, {}).get(label, 0)
-        fp = sum(confusion_matrix.get(actual, {}).get(label, 0) for actual in labels if actual != label)
-        fn = sum(confusion_matrix.get(label, {}).get(pred, 0) for pred in labels if pred != label)
+        tp = confusion_matrix[label].get("tp", 0)
+        fp = confusion_matrix[label].get("fp", 0)
+        fn = confusion_matrix[label].get("fn", 0)
 
         precision = tp / (tp + fp) if (tp + fp) else 0.0
         recall = tp / (tp + fn) if (tp + fn) else 0.0
@@ -74,7 +74,7 @@ def compute_false_positive_rate(
     predicted_labels: List[str],
     out_of_scope_label: str = "out_of_scope",
 ) -> float:
-    valid_indices = [i for i, label in enumerate(actual_labels) if label != out_of_scope_label]
+    valid_indices = [i for i, label in enumerate(actual_labels) if out_of_scope_label not in set(label.split(","))]
     total_valid = len(valid_indices)
     if total_valid == 0:
         return 0.0
@@ -82,6 +82,6 @@ def compute_false_positive_rate(
     false_positives = sum(
         1
         for i in valid_indices
-        if predicted_labels[i] == out_of_scope_label
+        if out_of_scope_label in set(predicted_labels[i].split(","))
     )
     return round(false_positives / total_valid, 6)

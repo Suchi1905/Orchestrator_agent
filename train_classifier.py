@@ -2,6 +2,7 @@
 train_classifier.py
 -------------------
 Trains a semantic ML classifier to replace the Tier-2 keyword rule engine.
+Supports Multi-Intent training.
 
 Anti-overfitting measures applied:
   1. FROZEN embeddings — all-MiniLM-L6-v2 pre-trained on 1B+ sentences (no fine-tuning).
@@ -16,7 +17,7 @@ Run once:
     python train_classifier.py
 
 Output:
-    tier2_classifier.pkl   — the trained (calibrated) Logistic Regression classifier
+    tier2_classifier.pkl   — dictionary containing 'classifier' (calibrated Logistic Regression) and 'mlb' (MultiLabelBinarizer)
 """
 
 import os, csv
@@ -25,22 +26,21 @@ import joblib
 
 from sklearn.linear_model import LogisticRegression
 from sklearn.calibration import CalibratedClassifierCV
-from sklearn.model_selection import StratifiedShuffleSplit, cross_val_score
+from sklearn.multiclass import OneVsRestClassifier
+from sklearn.preprocessing import MultiLabelBinarizer
+from sklearn.model_selection import train_test_split, KFold, cross_val_score
 from sklearn.metrics import classification_report, accuracy_score
 from sentence_transformers import SentenceTransformer
 
 # ── Config ─────────────────────────────────────────────────────────────────
-DATASET_PATH   = r"c:\Users\hp\Downloads\final_cleaned_dataset.csv"
-MODEL_NAME     = "sentence-transformers/all-MiniLM-L6-v2"
-OUTPUT_PKL     = os.path.join(os.path.dirname(__file__), "tier2_classifier.pkl")
-
-# Both datasets are combined for training.
-# A 60/40 stratified split is applied to the COMBINED set, so the test rows
-# are genuinely held-out and never seen during training.
 DATASET_PATHS = [
     r"c:\Users\hp\Downloads\final_cleaned_dataset.csv",   # 1000 rows (original benchmark)
     r"c:\Users\hp\Desktop\orchestration_agent\dataset\new_dataset.csv",  # 550 rows (new patterns)
+    r"c:\Users\hp\Desktop\orchestration_agent\dataset\havells_multi_intent_dataset.csv", # Multi intent
 ]
+
+MODEL_NAME     = "sentence-transformers/all-MiniLM-L6-v2"
+OUTPUT_PKL     = os.path.join(os.path.dirname(__file__), "tier2_classifier.pkl")
 
 TEST_FRACTION  = 0.40    # 60% train / 40% test — larger holdout proves generalization
 RANDOM_SEED    = 42
@@ -60,14 +60,26 @@ ALIAS_MAP = {
 }
 
 
-def normalize_label(raw: str) -> str:
-    n = (raw or "").strip().lower()
-    if n in ALIAS_MAP:
-        return ALIAS_MAP[n]
-    for k, v in ALIAS_MAP.items():
-        if n.startswith(k):
-            return v
-    return "out_of_scope"
+def normalize_labels(raw: str) -> list:
+    intents = []
+    for p in str(raw).split(","):
+        n = p.strip().lower()
+        if not n: continue
+        mapped = "out_of_scope"
+        if n in ALIAS_MAP:
+            mapped = ALIAS_MAP[n]
+        else:
+            for k, v in ALIAS_MAP.items():
+                if n.startswith(k):
+                    mapped = v
+                    break
+        intents.append(mapped)
+    
+    # Remove duplicates
+    intents = list(set(intents))
+    if not intents:
+        return ["out_of_scope"]
+    return intents
 
 
 # ── Load datasets (combined) ────────────────────────────────────────────────
@@ -81,28 +93,30 @@ for path in DATASET_PATHS:
     with open(path, encoding="utf-8") as f:
         for row in csv.DictReader(f):
             text  = str(row.get("input_text", "")).strip()
-            label = normalize_label(str(row.get("actual_label", "")))
+            label_raw = row.get("actual_label", row.get("label", ""))
+            label_list = normalize_labels(label_raw)
             if text:
                 texts.append(text)
-                labels.append(label)
+                labels.append(label_list)
     print(f"  {len(texts) - count_before} rows  <-  {os.path.basename(path)}")
 
 print(f"\nCombined total: {len(texts)} rows")
-labels_arr = np.array(labels)
-unique, counts = np.unique(labels_arr, return_counts=True)
-for cls, cnt in zip(unique, counts):
-    print(f"  {cls:<20s}: {cnt}")
+
+# ── Multi-Label Binarization ───────────────────────────────────────────────
+mlb = MultiLabelBinarizer(classes=INTENT_CLASSES)
+labels_arr = mlb.fit_transform(labels)
+print("\nMultiLabel distribution:")
+for cls_idx, cls_name in enumerate(mlb.classes_):
+    print(f"  {cls_name:<20s}: {labels_arr[:, cls_idx].sum()}")
 
 
-# ── Stratified 60/40 split ─────────────────────────────────────────────────
+# ── Train/Test split ───────────────────────────────────────────────────────
 print(f"\nSplitting: {int((1-TEST_FRACTION)*100)}% train / {int(TEST_FRACTION*100)}% test  (seed={RANDOM_SEED})")
-splitter = StratifiedShuffleSplit(n_splits=1, test_size=TEST_FRACTION, random_state=RANDOM_SEED)
-train_idx, test_idx = next(splitter.split(texts, labels_arr))
-
-train_texts  = [texts[i] for i in train_idx]
-train_labels = labels_arr[train_idx]
-test_texts   = [texts[i] for i in test_idx]
-test_labels  = labels_arr[test_idx]
+# StratifiedShuffleSplit isn't natively supported for multilabel arrays in sklearn without iterative-stratification
+# We will use random train_test_split which is generally sufficient for 1500+ rows
+train_texts, test_texts, train_labels, test_labels = train_test_split(
+    texts, labels_arr, test_size=TEST_FRACTION, random_state=RANDOM_SEED
+)
 
 print(f"  Train: {len(train_texts)} rows  |  Test: {len(test_texts)} rows")
 
@@ -119,19 +133,16 @@ X_test = encoder.encode(test_texts, batch_size=64, show_progress_bar=True, norma
 print(f"  Embedding dim: {X_train_clean.shape[1]}")
 
 # ── Gaussian noise augmentation ────────────────────────────────────────────
-# Adds small random perturbations to training embeddings so the model learns
-# a wider decision boundary — reduces sensitivity to exact embedding positions.
 print(f"\nApplying Gaussian noise augmentation (std={NOISE_STD}) to training embeddings...")
 rng = np.random.default_rng(RANDOM_SEED)
 noise = rng.normal(0, NOISE_STD, X_train_clean.shape).astype(np.float32)
 X_train = X_train_clean + noise
-# Re-normalize so embeddings stay on unit sphere
 norms = np.linalg.norm(X_train, axis=1, keepdims=True)
 X_train = X_train / np.maximum(norms, 1e-8)
 print(f"  Augmented training embeddings shape: {X_train.shape}")
 
 # ── Train Logistic Regression (regularized, calibrated) ───────────────────
-print(f"\nTraining Logistic Regression (C={LR_C}, strong L2 regularization)...")
+print(f"\nTraining Multi-Intent Logistic Regression (OneVsRest + Calibration, C={LR_C})...")
 base_lr = LogisticRegression(
     C=LR_C,
     max_iter=2000,
@@ -139,41 +150,31 @@ base_lr = LogisticRegression(
     solver="lbfgs",
     random_state=RANDOM_SEED,
 )
-# CalibratedClassifierCV gives reliable probability scores for confidence thresholding
-clf = CalibratedClassifierCV(base_lr, cv=5, method="isotonic")
+clf = OneVsRestClassifier(CalibratedClassifierCV(base_lr, cv=5, method="isotonic"))
 clf.fit(X_train, train_labels)
 print("  Training complete.")
 
-# ── 5-fold cross-validation on training data ───────────────────────────────
-print("\nRunning 5-fold cross-validation on train split...")
-base_lr_cv = LogisticRegression(
-    C=LR_C, max_iter=2000, class_weight="balanced",
-    solver="lbfgs", random_state=RANDOM_SEED,
-)
-cv_scores = cross_val_score(base_lr_cv, X_train, train_labels, cv=5, scoring="accuracy")
-print(f"  CV accuracy: {cv_scores.mean():.4f} +/- {cv_scores.std():.4f}")
-print(f"  Per fold:    {[round(s, 3) for s in cv_scores]}")
 
 # ── Evaluate on HELD-OUT test set ──────────────────────────────────────────
 print("\n" + "=" * 60)
 print("HELD-OUT TEST SET RESULTS (40% of data, never seen during training)")
 print("=" * 60)
 test_preds = clf.predict(X_test)
-test_acc   = accuracy_score(test_labels, test_preds)
-print(f"\nOverall accuracy: {test_acc:.4f}  ({test_acc * 100:.2f}%)")
+test_acc_exact = accuracy_score(test_labels, test_preds)
+print(f"\nExact-Match Accuracy (all intents must match): {test_acc_exact:.4f}  ({test_acc_exact * 100:.2f}%)")
 print()
-print(classification_report(test_labels, test_preds, target_names=INTENT_CLASSES, zero_division=0))
+print(classification_report(test_labels, test_preds, target_names=mlb.classes_, zero_division=0))
 
-gap = cv_scores.mean() - test_acc
-print(f"CV vs test gap: {gap:.4f}")
-if gap > 0.08:
-    print("WARNING: Large gap detected — possible overfitting. Try lowering C further.")
-elif test_acc >= 0.90:
-    print("OK: Test accuracy >= 90% with strong regularization — good generalization signal.")
+if test_acc_exact >= 0.85:
+    print("OK: Test exact accuracy >= 85% with multi-label formulation — good generalization signal.")
 else:
-    print("NOTE: Test accuracy < 90%. Consider more training data or tuning C.")
+    print("NOTE: Test exact accuracy < 85%. Consider more training data or tuning C.")
 
-# ── Save classifier ────────────────────────────────────────────────────────
-print(f"\nSaving classifier to: {OUTPUT_PKL}")
-joblib.dump(clf, OUTPUT_PKL)
+# ── Save classifier & MLB ─────────────────────────────────────────────────
+print(f"\nSaving classifier and binarizer to: {OUTPUT_PKL}")
+model_dict = {
+    'classifier': clf,
+    'mlb': mlb
+}
+joblib.dump(model_dict, OUTPUT_PKL)
 print("Done. The Streamlit app will load the new model automatically on next restart.")
